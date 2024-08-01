@@ -88,6 +88,12 @@ class Image_Watermark_Settings {
 		add_settings_field( 'iw_image_quality', __( 'Image quality', 'image-watermark' ), [ $this, 'iw_image_quality' ], 'image_watermark_options', 'image_watermark_image' );
 		add_settings_field( 'iw_image_format', __( 'Image format', 'image-watermark' ), [ $this, 'iw_image_format' ], 'image_watermark_options', 'image_watermark_image' );
 
+		// Watermark pattern image
+		add_settings_section( 'image_watermark_pattern_image', __( 'Watermark pattern image', 'image-watermark' ), '', 'image_watermark_options' );
+		add_settings_field( 'image_watermark_pattern_image', __( 'Watermark pattern image', 'image-watermark' ), [ $this, 'iw_watermark_pattern_image' ], 'image_watermark_options', 'image_watermark_pattern_image' );
+		add_settings_field( 'iw_watermark_pattern_preview', __( 'Watermark pattern preview', 'image-watermark' ), [ $this, 'iw_watermark_pattern_preview' ], 'image_watermark_options', 'image_watermark_pattern_image' );
+		add_settings_field( 'iw_watermark_pattern_opacity', __( 'Watermark transparency / opacity', 'image-watermark' ), [ $this, 'iw_watermark_pattern_opacity' ], 'image_watermark_options', 'image_watermark_pattern_image' );
+
 		// watermark protection
 		add_settings_section( 'image_watermark_protection', __( 'Image protection', 'image-watermark' ), '', 'image_watermark_options' );
 		add_settings_field( 'iw_protection_right_click', __( 'Right click', 'image-watermark' ), [ $this, 'iw_protection_right_click' ], 'image_watermark_options', 'image_watermark_protection' );
@@ -235,6 +241,13 @@ class Image_Watermark_Settings {
 
 			$input['backup']['backup_image'] = isset( $_POST['iw_options']['backup']['backup_image'] );
 			$input['backup']['backup_quality'] = isset( $_POST['iw_options']['backup']['backup_quality'] ) ? (int) $_POST['iw_options']['backup']['backup_quality'] : Image_Watermark()->defaults['options']['backup']['backup_quality'];
+
+			// watermark pattern image
+			$input['watermark_pattern_image']['transparent'] = isset( $_POST['iw_options']['watermark_pattern_image']['transparent'] ) ? (int) $_POST['iw_options']['watermark_pattern_image']['transparent'] : Image_Watermark()->defaults['options']['watermark_pattern_image']['transparent'];
+			
+			$input['watermark_pattern_image']['url'] = isset( $_POST['iw_options']['watermark_pattern_image']['url'] ) ? (int) $_POST['iw_options']['watermark_pattern_image']['url'] : Image_Watermark()->defaults['options']['watermark_pattern_image']['url'];
+			
+
 
 			add_settings_error( 'iw_settings_errors', 'iw_settings_saved', __( 'Settings saved.', 'image-watermark' ), 'updated' );
 		} elseif ( isset( $_POST['reset_image_watermark_options'] ) ) {
@@ -692,6 +705,88 @@ class Image_Watermark_Settings {
 		<p class="description"><?php _e( 'Set output image quality.', 'image-watermark' ); ?></p>
 		<?php
 	}
+
+
+	/**
+	 * Watermark pattern image option.
+	 *
+	 * @return void
+	 */
+	public function iw_watermark_pattern_image() {
+		if ( Image_Watermark()->options['watermark_pattern_image']['url'] !== null && Image_Watermark()->options['watermark_pattern_image']['url'] != 0 ) {
+			$image = wp_get_attachment_image_src( Image_Watermark()->options['watermark_pattern_image']['url'], [ 300, 300 ], false );
+			$image_selected = true;
+		} else {
+			$image_selected = false;
+		}
+		?>
+		<div class="iw_watermark_pattern_image">
+			<input id="iw_upload_pattern_image" type="hidden" name="iw_options[watermark_pattern_image][url]" value="<?php echo (int) Image_Watermark()->options['watermark_pattern_image']['url']; ?>" />
+			<input id="iw_upload_pattern_image_button" type="button" class="button button-secondary" value="<?php echo __( 'Select image', 'image-watermark' ); ?>" />
+			<input id="iw_turn_off_pattern_image_button" type="button" class="button button-secondary" value="<?php echo __( 'Remove image', 'image-watermark' ); ?>" <?php if ( $image_selected === false ) echo 'disabled="disabled"'; ?>/>
+			<p class="description"><?php _e( 'You have to save changes after the selection or removal of the image.', 'image-watermark' ); ?></p>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Watermark image preview.
+	 *
+	 * @return void
+	 */
+	public function iw_watermark_pattern_preview() {
+		if ( Image_Watermark()->options['watermark_pattern_image']['url'] !== null && Image_Watermark()->options['watermark_pattern_image']['url'] != 0 ) {
+			$image = wp_get_attachment_image_src( Image_Watermark()->options['watermark_image']['url'], [ 300, 300 ], false );
+			$image_selected = true;
+		} else
+			$image_selected = false;
+		?>
+		<fieldset id="iw_watermark_pattern_preview">
+			<div id="previewImg_pattern_imageDiv">
+			<?php
+				if ( $image_selected ) {
+					$image = wp_get_attachment_image_src( Image_Watermark()->options['watermark_pattern_image']['url'], [ 300, 300 ], false );
+					?>
+					<img id="previewImg_pattern_image" src="<?php echo $image[0]; ?>" alt="" width="300" />
+				<?php } else { ?>
+					<img id="previewImg_pattern_image" src="" alt="" width="300" style="display: none;" />
+				<?php }
+			?>
+			</div>
+			<p id="previewPatternImageInfo" class="description">
+			<?php
+			if ( ! $image_selected ) {
+				_e( 'Watermak has not been selected yet.', 'image-watermark' );
+			} else {
+				$image_full_size = wp_get_attachment_image_src( Image_Watermark()->options['watermark_pattern_image']['url'], 'full', false );
+
+				echo __( 'Original size', 'image-watermark' ) . ': ' . $image_full_size[1] . ' ' . __( 'px', 'image-watermark' ) . ' / ' . $image_full_size[2] . ' ' . __( 'px', 'image-watermark' );
+			}
+		?>
+			</p>
+		</fieldset>
+		<?php
+	}
+
+	/**
+	 * Watermark pattern image opacity option.
+	 *
+	 * @return void
+	 */
+	public function iw_watermark_pattern_opacity() {
+		?>
+		<fieldset id="iw_watermark_pattern_opacity">
+			<div>
+				<input type="text" id="iw_pattern_opacity_input" maxlength="3" class="hide-if-js" name="iw_options[watermark_pattern_image][transparent]" value="<?php echo Image_Watermark()->options['watermark_pattern_image']['transparent']; ?>" />
+				<div class="wplike-slider">
+					<span class="left hide-if-no-js">0</span><span class="middle" id="iw_pattern_opacity_span" title="<?php echo Image_Watermark()->options['watermark_pattern_image']['transparent']; ?>"><span class="iw-current-value" style="left: <?php echo Image_Watermark()->options['watermark_pattern_image']['transparent']; ?>%;"><?php echo Image_Watermark()->options['watermark_pattern_image']['transparent']; ?></span></span><span class="right hide-if-no-js">100</span>
+				</div>
+			</div>
+		</fieldset>
+		<p class="description"><?php _e( 'Enter a number ranging from 0 to 100. 0 makes watermark image completely transparent, 100 shows it as is.', 'image-watermark' ); ?></p>
+		<?php
+	}
+
 
 	/**
 	 * This function is similar to the function in the Settings API, only the output HTML is changed.
