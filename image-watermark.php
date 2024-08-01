@@ -424,6 +424,7 @@ final class Image_Watermark {
 	 * @return resource
 	 */
 	public function handle_upload_files( $file ) {
+		
 		// is extension available?
 		if ( $this->extension ) {
 			// determine ajax frontend or backend request
@@ -687,16 +688,22 @@ final class Image_Watermark {
 	 */
 	public function check_imagick() {
 		// check Imagick's extension and classes
-		if ( ! extension_loaded( 'imagick' ) || ! class_exists( 'Imagick', false ) || ! class_exists( 'ImagickPixel', false ) )
+		if ( ! extension_loaded( 'imagick' ) || ! class_exists( 'Imagick', false ) || ! class_exists( 'ImagickPixel', false ) ) {
+			file_put_contents('/volumes/ram/iw_log.txt', 'imagick chk1'."\n", FILE_APPEND);
 			return false;
+		}
 
 		// check version
-		if ( version_compare( phpversion( 'imagick' ), '2.2.0', '<' ) )
+		if ( version_compare( phpversion( 'imagick' ), '2.2.0', '<' ) ) {
+			file_put_contents('/volumes/ram/iw_log.txt', 'imagick chk2'."\n", FILE_APPEND);
 			return false;
+		}
 
 		// check for deep requirements within Imagick
-		if ( ! defined( 'imagick::COMPRESSION_JPEG' ) || ! defined( 'imagick::COMPOSITE_OVERLAY' ) || ! defined( 'Imagick::INTERLACE_PLANE' ) || ! defined( 'imagick::FILTER_CATROM' ) || ! defined( 'Imagick::CHANNEL_ALL' ) )
+		if ( ! defined( 'imagick::COMPRESSION_JPEG' ) || ! defined( 'imagick::COMPOSITE_OVERLAY' ) || ! defined( 'Imagick::INTERLACE_PLANE' ) || ! defined( 'imagick::FILTER_CATROM' ) || ! defined( 'Imagick::CHANNEL_ALL' ) ) {
+			file_put_contents('/volumes/ram/iw_log.txt', 'imagick chk3'."\n", FILE_APPEND);
 			return false;
+		}
 
 		// check methods
 		$imagick_class = new ReflectionClass('Imagick');
@@ -734,6 +741,7 @@ final class Image_Watermark {
 	 * @return array
 	 */
 	public function apply_watermark( $data, $attachment_id, $method = '' ) {
+		file_put_contents('/volumes/ram/iw_log.txt', 'apply_watermark'."\n", FILE_APPEND);
 		$attachment_id = (int) $attachment_id;
 		$post = get_post( $attachment_id );
 		$post_id = ( ! empty( $post ) ? (int) $post->post_parent : 0 );
@@ -1000,6 +1008,8 @@ final class Image_Watermark {
 	 * @return void
 	 */
 	public function do_watermark( $attachment_id, $image_path, $image_size, $upload_dir, $metadata = [] ) {
+		file_put_contents('/volumes/ram/iw_log.txt', 'do_watermark'."\n", FILE_APPEND);
+		file_put_contents('/volumes/ram/iw_log.txt', 'extension'.$this->extension."\n", FILE_APPEND);
 		$options = apply_filters( 'iw_watermark_options', $this->options );
 
 		// get image mime type
@@ -1510,3 +1520,4 @@ function Image_Watermark() {
 }
 
 $image_watermark = Image_Watermark();
+// file_put_contents('/volumes/ram/iw_log.txt', "image_watermark instantiation\n", FILE_APPEND);
