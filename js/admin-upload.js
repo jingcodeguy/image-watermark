@@ -129,7 +129,6 @@
 		watermarkPatternFileUpload.init();
 
 		$( document ).on( 'click', '#iw_turn_off_pattern_image_button', function() {
-			alert();
 			$( this ).attr( 'disabled', 'true' );
 			$( '#iw_upload_pattern_image' ).val( 0 );
 			$( 'div#previewImg_pattern_imageDiv img#previewImg_pattern_image' ).attr( 'src', '' ).hide();

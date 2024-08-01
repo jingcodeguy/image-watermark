@@ -1088,7 +1088,6 @@ final class Image_Watermark {
 				$offsetX = ($image_dim['width'] - $canvas_dim['width']) / 2;
 				$offsetY = ($image_dim['height'] - $canvas_dim['height']) / 2;
 
-				$canvas->writeImage('/volumes/ram/test2.png');
 
 				$image->compositeImage($canvas, Imagick::COMPOSITE_OVER, intval($offsetX), intval($offsetY));
 				$texture->clear();
