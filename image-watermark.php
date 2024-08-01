@@ -71,12 +71,12 @@ final class Image_Watermark {
 			'watermark_pattern_image'	 => [
 				'extension'				 => '',
 				'url'					 => 0,
-				'width'					 => 80,
+				'width'					 => 20,
 				'plugin_off'			 => 0,
 				'frontend_active'		 => false,
 				'manual_watermarking'	 => 0,
 				'rotation'				 => 0,
-				'transparent'			 => 20,
+				'transparent'			 => 10,
 				'deactivation_delete'	 => false,
 				'media_library_notice'	 => true
 			],
@@ -481,7 +481,7 @@ final class Image_Watermark {
 
 			// admin
 			if ( $this->is_admin === true ) {
-				if ( $this->options['watermark_image']['plugin_off'] == 1 && wp_attachment_is_image( $this->options['watermark_image']['url'] ) && in_array( $file['type'], $this->allowed_mime_types ) )
+				if ( $this->options['watermark_image']['plugin_off'] == 1 && (wp_attachment_is_image( $this->options['watermark_image']['url'] ) || wp_attachment_is_image( $this->options['watermark_pattern_image']['url'] )) && in_array( $file['type'], $this->allowed_mime_types ) )
 					add_filter( 'wp_generate_attachment_metadata', [ $this, 'apply_watermark' ], 10, 2 );
 			// frontend
 			} else {
@@ -548,7 +548,7 @@ final class Image_Watermark {
 
 		// only if manual watermarking is turned and we have a valid action
 		// if the action is NOT "removewatermark" we also require a watermark image to be set
-		if ( $post_id > 0 && $action && $this->options['watermark_image']['manual_watermarking'] == 1 && ( wp_attachment_is_image( $this->options['watermark_image']['url'] ) || $action == 'removewatermark' ) ) {
+		if ( $post_id > 0 && $action && $this->options['watermark_image']['manual_watermarking'] == 1 && ( wp_attachment_is_image( $this->options['watermark_image']['url'] ) || wp_attachment_is_image( $this->options['watermark_pattern_image']['url'] ) || $action == 'removewatermark' ) ) {
 			$data = wp_get_attachment_metadata( $post_id, false );
 
 			// is this really an image?
@@ -590,7 +590,7 @@ final class Image_Watermark {
 
 			// only if manual watermarking is turned and we have a valid action
 			// if the action is NOT "removewatermark" we also require a watermark image to be set
-			if ( $action && $this->options['watermark_image']['manual_watermarking'] == 1 && ( wp_attachment_is_image( $this->options['watermark_image']['url'] ) || $action == 'removewatermark' ) ) {
+			if ( $action && $this->options['watermark_image']['manual_watermarking'] == 1 && ( wp_attachment_is_image( $this->options['watermark_image']['url'] ) || $this->options['watermark_pattern_image']['url'] || $action == 'removewatermark' ) ) {
 				// security check
 				check_admin_referer( 'bulk-media' );
 
@@ -1034,56 +1034,111 @@ final class Image_Watermark {
 		// get image mime type
 		$mime = wp_check_filetype( $image_path );
 
-		if ( ! wp_attachment_is_image( $options['watermark_image']['url'] ) )
+		if ( ! wp_attachment_is_image( $options['watermark_image']['url'] ) && ! wp_attachment_is_image( $options['watermark_pattern_image']['url'] ) )
 			return;
-
-		// get watermark path
-		$watermark_file = wp_get_attachment_metadata( $options['watermark_image']['url'], true );
-		$watermark_path = $upload_dir['basedir'] . DIRECTORY_SEPARATOR . $watermark_file['file'];
 
 		// imagick extension
 		if ( $this->extension === 'imagick' ) {
 			// create image resource
 			$image = new Imagick( $image_path );
 
-			// create watermark resource
-			$watermark = new Imagick( $watermark_path );
-
-			// alpha channel exists?
-			if ( $watermark->getImageAlphaChannel() > 0 )
-				$watermark->evaluateImage( Imagick::EVALUATE_MULTIPLY, round( (float) ( $options['watermark_image']['transparent'] / 100 ), 2 ), Imagick::CHANNEL_ALPHA );
-			// no alpha channel
-			else
-				$watermark->setImageOpacity( round( (float) ( $options['watermark_image']['transparent'] / 100 ), 2 ) );
-
-			// set compression quality
-			if ( $mime['type'] === 'image/jpeg' ) {
-				$image->setImageCompressionQuality( $options['watermark_image']['quality'] );
-				$image->setImageCompression( imagick::COMPRESSION_JPEG );
-			} else
-				$image->setImageCompressionQuality( $options['watermark_image']['quality'] );
-
-			// set image output to progressive
-			if ( $options['watermark_image']['jpeg_format'] === 'progressive' )
-				$image->setImageInterlaceScheme( Imagick::INTERLACE_PLANE );
-
 			// get image dimensions
 			$image_dim = $image->getImageGeometry();
+			
+			// add texture watermark
+			// Create texture if pattern image is set.
+			if ( wp_attachment_is_image( $options['watermark_pattern_image']['url'] ) ) {
+				// file_put_contents('/volumes/ram/iw_log.txt', 'process pattern image'."\n", FILE_APPEND);
+				
+				$texture = new Imagick();
+				$texture->setBackgroundColor(new ImagickPixel('none')); // Keyword: "transparent" also work
+				
+				$texture_opacity = $options['watermark_pattern_image']['transparent'];
+				$texture_base_path = get_attached_file( $options['watermark_pattern_image']['url'] );
+				$read_texture_status = $texture->readImage(realpath($texture_base_path));
 
-			// get watermark dimensions
-			$watermark_dim = $watermark->getImageGeometry();
+				$texture->evaluateImage(Imagick::EVALUATE_MULTIPLY, $texture_opacity / 100, Imagick::CHANNEL_ALPHA);
 
-			// calculate watermark new dimensions
-			list( $width, $height ) = $this->calculate_watermark_dimensions( $image_dim['width'], $image_dim['height'], $watermark_dim['width'], $watermark_dim['height'], $options );
+				$texture_dim = $texture->getImageGeometry();
+				$ideal_watermark_width = $options['watermark_pattern_image']['width'] / 100 * $image_dim['width'];
+				$scale_factor = $ideal_watermark_width / $texture_dim['width'];
+				$texture->scaleimage(intval($texture_dim['width'] * $scale_factor), intval($texture_dim['height'] * $scale_factor));
 
-			// resize watermark
-			$watermark->resizeImage( $width, $height, imagick::FILTER_CATROM, 1 );
+				// update the new height and width after scale
+				$texture_dim = $texture->getImageGeometry();
 
-			// calculate image coordinates
-			list( $dest_x, $dest_y ) = $this->calculate_image_coordinates( $image_dim['width'], $image_dim['height'], $width, $height, $options );
+				$diagonal = ceil(sqrt(pow($image_dim['width'], 2) + pow($image_dim['height'], 2)));
+				// generate the pattern
+				$canvas = new Imagick();
+				$canvas->newImage($diagonal, $diagonal, 'none');
+				$canvas->setImageFormat("png");
+				$canvas->setImageAlphaChannel(Imagick::ALPHACHANNEL_SET);
 
-			// combine two images together
-			$image->compositeImage( $watermark, Imagick::COMPOSITE_DEFAULT, $dest_x, $dest_y, Imagick::CHANNEL_ALL );
+				for ($x = 0; $x < $diagonal; $x += $texture_dim['width']) {
+					for ($y = 0; $y < $diagonal; $y += $texture_dim['height']) {
+						// file_put_contents('/volumes/ram/iw_log.txt', 'x '.$x."\n", FILE_APPEND);
+						// file_put_contents('/volumes/ram/iw_log.txt', 'y '.$y."\n", FILE_APPEND);
+						$canvas->compositeImage($texture, Imagick::COMPOSITE_OVER, $x, $y);
+					}
+				}
+
+				$canvas->rotateImage(new ImagickPixel('none'), -45);
+				$canvas_dim = $canvas->getImageGeometry();
+
+				$offsetX = ($image_dim['width'] - $canvas_dim['width']) / 2;
+				$offsetY = ($image_dim['height'] - $canvas_dim['height']) / 2;
+
+				$canvas->writeImage('/volumes/ram/test2.png');
+
+				$image->compositeImage($canvas, Imagick::COMPOSITE_OVER, intval($offsetX), intval($offsetY));
+			}
+
+			if ( wp_attachment_is_image( $options['watermark_image']['url'] )) {
+				// get watermark path
+				$watermark_file = wp_get_attachment_metadata( $options['watermark_image']['url'], true );
+				$watermark_path = $upload_dir['basedir'] . DIRECTORY_SEPARATOR . $watermark_file['file'];
+				
+				// create watermark resource
+				$watermark = new Imagick( $watermark_path );
+				
+				// alpha channel exists?
+				if ( $watermark->getImageAlphaChannel() > 0 )
+					$watermark->evaluateImage( Imagick::EVALUATE_MULTIPLY, round( (float) ( $options['watermark_image']['transparent'] / 100 ), 2 ), Imagick::CHANNEL_ALPHA );
+				// no alpha channel
+				else
+					$watermark->setImageOpacity( round( (float) ( $options['watermark_image']['transparent'] / 100 ), 2 ) );
+		
+				// set compression quality
+				if ( $mime['type'] === 'image/jpeg' ) {
+					$image->setImageCompressionQuality( $options['watermark_image']['quality'] );
+					$image->setImageCompression( imagick::COMPRESSION_JPEG );
+				} else
+					$image->setImageCompressionQuality( $options['watermark_image']['quality'] );
+
+				// set image output to progressive
+				if ( $options['watermark_image']['jpeg_format'] === 'progressive' )
+				$image->setImageInterlaceScheme( Imagick::INTERLACE_PLANE );
+			
+				// calculate image coordinates
+				list( $dest_x, $dest_y ) = $this->calculate_image_coordinates( $image_dim['width'], $image_dim['height'], $width, $height, $options );
+
+				// get watermark dimensions
+				$watermark_dim = $watermark->getImageGeometry();
+	
+				// calculate watermark new dimensions
+				list( $width, $height ) = $this->calculate_watermark_dimensions( $image_dim['width'], $image_dim['height'], $watermark_dim['width'], $watermark_dim['height'], $options );
+	
+				// resize watermark
+				$watermark->resizeImage( $width, $height, imagick::FILTER_CATROM, 1 );
+
+				// combine two images together
+				$image->compositeImage( $watermark, Imagick::COMPOSITE_DEFAULT, $dest_x, $dest_y, Imagick::CHANNEL_ALL );
+
+				// clear watermark memory
+				$watermark->clear();
+				$watermark->destroy();
+				$watermark = null;
+			}	
 
 			// save watermarked image
 			$image->writeImage( $image_path );
@@ -1093,10 +1148,7 @@ final class Image_Watermark {
 			$image->destroy();
 			$image = null;
 
-			// clear watermark memory
-			$watermark->clear();
-			$watermark->destroy();
-			$watermark = null;
+			
 		// gd extension
 		} else {
 			// get image resource

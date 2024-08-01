@@ -246,6 +246,8 @@ class Image_Watermark_Settings {
 			$input['watermark_pattern_image']['transparent'] = isset( $_POST['iw_options']['watermark_pattern_image']['transparent'] ) ? (int) $_POST['iw_options']['watermark_pattern_image']['transparent'] : Image_Watermark()->defaults['options']['watermark_pattern_image']['transparent'];
 			
 			$input['watermark_pattern_image']['url'] = isset( $_POST['iw_options']['watermark_pattern_image']['url'] ) ? (int) $_POST['iw_options']['watermark_pattern_image']['url'] : Image_Watermark()->defaults['options']['watermark_pattern_image']['url'];
+
+			$input['watermark_pattern_image']['width'] = isset( $_POST['iw_options']['watermark_pattern_image']['width'] ) ? (int) $_POST['iw_options']['watermark_pattern_image']['width'] : Image_Watermark()->defaults['options']['watermark_pattern_image']['width'];
 			
 
 
