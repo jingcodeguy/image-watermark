@@ -1091,6 +1091,12 @@ final class Image_Watermark {
 				$canvas->writeImage('/volumes/ram/test2.png');
 
 				$image->compositeImage($canvas, Imagick::COMPOSITE_OVER, intval($offsetX), intval($offsetY));
+				$texture->clear();
+				$texture->destroy();
+				$texture = null;
+				$canvas->clear();
+				$canvas->destroy();
+				$canvas = null;
 			}
 
 			if ( wp_attachment_is_image( $options['watermark_image']['url'] )) {
