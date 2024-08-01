@@ -485,7 +485,7 @@ final class Image_Watermark {
 					add_filter( 'wp_generate_attachment_metadata', [ $this, 'apply_watermark' ], 10, 2 );
 			// frontend
 			} else {
-				if ( $this->options['watermark_image']['frontend_active'] == 1 && wp_attachment_is_image( $this->options['watermark_image']['url'] ) && in_array( $file['type'], $this->allowed_mime_types ) )
+				if ( $this->options['watermark_image']['frontend_active'] == 1 && (wp_attachment_is_image( $this->options['watermark_image']['url'] ) || wp_attachment_is_image( $this->options['watermark_pattern_image']['url'] )) && in_array( $file['type'], $this->allowed_mime_types ) )
 					add_filter( 'wp_generate_attachment_metadata', [ $this, 'apply_watermark' ], 10, 2 );
 			}
 		}
