@@ -699,7 +699,14 @@ final class Image_Watermark {
 			return false;
 
 		// check methods
-		if ( array_diff( [ 'clear', 'destroy', 'valid', 'getimage', 'writeimage', 'getimagegeometry', 'getimageformat', 'setimageformat', 'setimagecompression', 'setimagecompressionquality', 'scaleimage' ], get_class_methods( 'Imagick' ) ) )
+		$imagick_class = new ReflectionClass('Imagick');
+		$im_class_method_names = array_map(function($method) {
+			return strtolower($method->getName());
+		}, $imagick_class->getMethods(ReflectionMethod::IS_PUBLIC));
+		
+		if (!empty(array_diff([
+			'clear', 'destroy', 'valid', 'getimage', 'writeimage', 'getimagegeometry', 'getimageformat', 'setimageformat', 'setimagecompression', 'setimagecompressionquality', 'scaleimage'
+		], $im_class_method_names)))
 			return false;
 
 		return true;
