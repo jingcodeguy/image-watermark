@@ -934,7 +934,13 @@ final class Image_Watermark {
 	public function save_image_metadata( $metadata, $file ) {
 		$mime = wp_check_filetype( $file );
 
-		if ( file_exists( $file ) && $mime['type'] !== 'image/png' ) {
+		$exif_supported_mime_types = [
+			'image/jpeg',
+			'image/pjpeg',
+		];
+
+		// Practically, only jpeg support EXIF well.
+		if ( file_exists( $file ) && in_array( $mime['type'], $exif_supported_mime_types) ) {
 			$exifdata = $metadata['exif'];
 			$iptcdata = $metadata['iptc'];
 
