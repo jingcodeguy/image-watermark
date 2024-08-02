@@ -94,6 +94,7 @@ class Image_Watermark_Settings {
 		add_settings_field( 'iw_watermark_pattern_preview', __( 'Watermark pattern preview', 'image-watermark' ), [ $this, 'iw_watermark_pattern_preview' ], 'image_watermark_options', 'image_watermark_pattern_image' );
 		add_settings_field( 'iw_watermark_pattern_opacity', __( 'Watermark transparency / opacity', 'image-watermark' ), [ $this, 'iw_watermark_pattern_opacity' ], 'image_watermark_options', 'image_watermark_pattern_image' );
 		add_settings_field( 'iw_watermark_pattern_image_ratio', __( 'Watermark ratio to the image', 'image-watermark' ), [ $this, 'iw_watermark_pattern_image_ratio' ], 'image_watermark_options', 'image_watermark_pattern_image' );
+		add_settings_field( 'iw_watermark_pattern_image_angle', __( 'Watermark ratio to the image', 'image-watermark' ), [ $this, 'iw_watermark_pattern_image_angle' ], 'image_watermark_options', 'image_watermark_pattern_image' );
 
 		// watermark protection
 		add_settings_section( 'image_watermark_protection', __( 'Image protection', 'image-watermark' ), '', 'image_watermark_options' );
@@ -249,7 +250,8 @@ class Image_Watermark_Settings {
 			$input['watermark_pattern_image']['url'] = isset( $_POST['iw_options']['watermark_pattern_image']['url'] ) ? (int) $_POST['iw_options']['watermark_pattern_image']['url'] : Image_Watermark()->defaults['options']['watermark_pattern_image']['url'];
 
 			$input['watermark_pattern_image']['width'] = isset( $_POST['iw_options']['watermark_pattern_image']['width'] ) ? (int) $_POST['iw_options']['watermark_pattern_image']['width'] : Image_Watermark()->defaults['options']['watermark_pattern_image']['width'];
-			
+
+			$input['watermark_pattern_image']['rotation'] = isset( $_POST['iw_options']['watermark_pattern_image']['rotation'] ) ? (int) $_POST['iw_options']['watermark_pattern_image']['rotation'] : Image_Watermark()->defaults['options']['watermark_pattern_image']['rotation'];
 
 			add_settings_error( 'iw_settings_errors', 'iw_settings_saved', __( 'Settings saved.', 'image-watermark' ), 'updated' );
 		} elseif ( isset( $_POST['reset_image_watermark_options'] ) ) {
@@ -808,6 +810,20 @@ class Image_Watermark_Settings {
 			</div>
 		</fieldset>
 		<p class="description"><?php _e( 'Enter a number ranging from 0 to 100. 100 makes width of watermark image equal to width of the image it is applied to.', 'image-watermark' ); ?></p>
+		<?php
+	}
+
+	/**
+	 * Watermark custom size option.
+	 *
+	 * @return void
+	 */
+	public function iw_watermark_pattern_image_angle() {
+		?>
+		<fieldset id="iw_watermark_pattern_image_angle">
+			<?php _e( 'Angle:', 'image-watermark' ); ?> <input type="text" size="5"  name="iw_options[watermark_pattern_image][rotation]" value="<?php echo Image_Watermark()->options['watermark_pattern_image']['rotation']; ?>"> <?php _e( 'degree', 'image-watermark' ); ?>
+		</fieldset>
+		<p class="description"><?php _e( 'Those angle with be used for the watermark image pattern canvas.' ); ?></p>
 		<?php
 	}
 
