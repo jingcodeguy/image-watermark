@@ -57,7 +57,7 @@ final class Image_Watermark {
 				'frontend_active'		 => false,
 				'manual_watermarking'	 => 0,
 				'position'				 => 'bottom_right',
-				'watermark_size_type'	 => 2,
+				'watermark_size_type'	 => 3,
 				'offset_unit'			 => 'pixels',
 				'offset_width'			 => 0,
 				'offset_height'			 => 0,
@@ -76,7 +76,7 @@ final class Image_Watermark {
 				'plugin_off'			 => 0,
 				'frontend_active'		 => false,
 				'manual_watermarking'	 => 0,
-				'rotation'				 => 0,
+				'rotation'				 => -45,
 				'transparent'			 => 10,
 				'deactivation_delete'	 => false,
 				'media_library_notice'	 => true
