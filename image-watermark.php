@@ -39,7 +39,8 @@ final class Image_Watermark {
 	private $allowed_mime_types = [
 		'image/jpeg',
 		'image/pjpeg',
-		'image/png'
+		'image/png',
+		'image/webp',
 	];
 	private $is_watermarked_metakey = 'iw-is-watermarked';
 	public $is_backup_folder_writable = null;
@@ -1244,6 +1245,13 @@ final class Image_Watermark {
 					imagefilledrectangle( $image, 0, 0, imagesx( $image ), imagesy( $image ), imagecolorallocatealpha( $image, 255, 255, 255, 127 ) );
 				break;
 
+			case 'image/webp':
+				$image = imagecreatefromwebp( $filepath );
+
+				if ( is_resource( $image ) )
+					imagefilledrectangle( $image, 0, 0, imagesx( $image ), imagesy( $image ), imagecolorallocatealpha( $image, 255, 255, 255, 127 ) );
+				break;
+
 			default:
 				$image = false;
 		}
@@ -1456,6 +1464,10 @@ final class Image_Watermark {
 				$watermark = imagecreatefrompng( $url );
 				break;
 
+			case 'image/webp':
+				$watermark = imagecreatefromwebp( $url );
+				break;
+
 			default:
 				return false;
 		}
@@ -1548,7 +1560,13 @@ final class Image_Watermark {
 				break;
 
 			case 'image/png':
+				imagesavealpha($image, true);
 				imagepng( $image, $filepath, (int) round( 9 - ( 9 * $quality / 100 ), 0 ) );
+				break;
+
+			case 'image/webp':
+				imagesavealpha($image, true);
+				imagewebp( $image, $filepath, (int) round( 9 - ( 9 * $quality / 100 ), 0 ) );
 				break;
 		}
 	}
