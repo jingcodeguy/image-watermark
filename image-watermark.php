@@ -875,6 +875,8 @@ final class Image_Watermark {
 			// update watermark status
 			update_post_meta( $attachment_id, $this->is_watermarked_metakey, 0 );
 
+			do_action( 'iw_after_remove_watermark', $attachment_id );
+
 			// ureturn the attachment metadata
 			return wp_get_attachment_metadata( $attachment_id );
 		}
