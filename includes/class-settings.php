@@ -93,6 +93,7 @@ class Image_Watermark_Settings {
 		add_settings_field( 'image_watermark_pattern_image', __( 'Watermark pattern image', 'image-watermark' ), [ $this, 'iw_watermark_pattern_image' ], 'image_watermark_options', 'image_watermark_pattern_image' );
 		add_settings_field( 'iw_watermark_pattern_preview', __( 'Watermark pattern preview', 'image-watermark' ), [ $this, 'iw_watermark_pattern_preview' ], 'image_watermark_options', 'image_watermark_pattern_image' );
 		add_settings_field( 'iw_watermark_pattern_opacity', __( 'Watermark transparency / opacity', 'image-watermark' ), [ $this, 'iw_watermark_pattern_opacity' ], 'image_watermark_options', 'image_watermark_pattern_image' );
+		add_settings_field( 'iw_watermark_pattern_image_ratio', __( 'Watermark ratio to the image', 'image-watermark' ), [ $this, 'iw_watermark_pattern_image_ratio' ], 'image_watermark_options', 'image_watermark_pattern_image' );
 
 		// watermark protection
 		add_settings_section( 'image_watermark_protection', __( 'Image protection', 'image-watermark' ), '', 'image_watermark_options' );
@@ -249,7 +250,6 @@ class Image_Watermark_Settings {
 
 			$input['watermark_pattern_image']['width'] = isset( $_POST['iw_options']['watermark_pattern_image']['width'] ) ? (int) $_POST['iw_options']['watermark_pattern_image']['width'] : Image_Watermark()->defaults['options']['watermark_pattern_image']['width'];
 			
-
 
 			add_settings_error( 'iw_settings_errors', 'iw_settings_saved', __( 'Settings saved.', 'image-watermark' ), 'updated' );
 		} elseif ( isset( $_POST['reset_image_watermark_options'] ) ) {
@@ -541,6 +541,9 @@ class Image_Watermark_Settings {
 				<input type="radio" id="type1" value="0" name="iw_options[watermark_image][watermark_size_type]" <?php checked( Image_Watermark()->options['watermark_image']['watermark_size_type'], 0, true ); ?> /><label for="type1"><?php _e( 'original', 'image-watermark' ); ?></label>
 				<input type="radio" id="type2" value="1" name="iw_options[watermark_image][watermark_size_type]" <?php checked( Image_Watermark()->options['watermark_image']['watermark_size_type'], 1, true ); ?> /><label for="type2"><?php _e( 'custom', 'image-watermark' ); ?></label>
 				<input type="radio" id="type3" value="2" name="iw_options[watermark_image][watermark_size_type]" <?php checked( Image_Watermark()->options['watermark_image']['watermark_size_type'], 2, true ); ?> /><label for="type3"><?php _e( 'scaled', 'image-watermark' ); ?></label>
+
+				<!-- keep the size and maintain proportion to the image. -->
+				<input type="radio" id="type4" value="3" name="iw_options[watermark_image][watermark_size_type]" <?php checked( Image_Watermark()->options['watermark_image']['watermark_size_type'], 3, true ); ?> /><label for="type4"><?php _e( 'Keep original size/maintain proportion to image', 'image-watermark' ); ?></label>
 			</div>
 			<p class="description"><?php _e( 'Select method of aplying watermark size.', 'image-watermark' ); ?></p>
 		</fieldset>
@@ -732,7 +735,7 @@ class Image_Watermark_Settings {
 	}
 
 	/**
-	 * Watermark image preview.
+	 * Watermark pattern image preview.
 	 *
 	 * @return void
 	 */
@@ -789,6 +792,24 @@ class Image_Watermark_Settings {
 		<?php
 	}
 
+	/**
+	 * Watermark pattern image ratio to image option(%).
+	 *
+	 * @return void
+	 */
+	public function iw_watermark_pattern_image_ratio() {
+		?>
+		<fieldset id="iw_watermark_pattern_image_ratio">
+			<div>
+				<input type="text" id="iw_pattern_size_input" maxlength="3" class="hide-if-js" name="iw_options[watermark_pattern_image][width]" value="<?php echo Image_Watermark()->options['watermark_pattern_image']['width']; ?>" />
+				<div class="wplike-slider">
+					<span class="left hide-if-no-js">0</span><span class="middle" id="iw_pattern_size_span" title="<?php echo Image_Watermark()->options['watermark_pattern_image']['width']; ?>"><span class="iw-current-value" style="left: <?php echo Image_Watermark()->options['watermark_pattern_image']['width']; ?>%;"><?php echo Image_Watermark()->options['watermark_pattern_image']['width']; ?></span></span><span class="right hide-if-no-js">100</span>
+				</div>
+			</div>
+		</fieldset>
+		<p class="description"><?php _e( 'Enter a number ranging from 0 to 100. 100 makes width of watermark image equal to width of the image it is applied to.', 'image-watermark' ); ?></p>
+		<?php
+	}
 
 	/**
 	 * This function is similar to the function in the Settings API, only the output HTML is changed.

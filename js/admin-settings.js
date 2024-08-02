@@ -67,6 +67,23 @@
 			}
 		} );
 
+		$( '#iw_pattern_size_span' ).slider( {
+			value: $( '#iw_pattern_size_input' ).val(),
+			min: 0,
+			max: 100,
+			step: 1,
+			orientation: 'horizontal',
+			slide: function( e, ui ) {
+				$( '#iw_pattern_size_input' ).attr( 'value', ui.value );
+				$( '#iw_pattern_size_span' ).attr( 'title', ui.value );
+
+				var element = $( ui.handle ).prev( '.iw-current-value' );
+
+				element.text( ui.value );
+				element.css( 'left', ui.value + '%' );
+			}
+		} );
+
 		// quality slider
 		$( '#iw_quality_span' ).slider( {
 			value: $( '#iw_quality_input' ).val(),
