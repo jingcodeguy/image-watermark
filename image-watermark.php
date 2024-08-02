@@ -1,8 +1,8 @@
 <?php
 /*
-Plugin Name: Image Watermark Forked Enhanced Version
-Description: Image Watermark allows you to automatically watermark images uploaded to the WordPress Media Library and bulk watermark previously uploaded images. This forked version enhanced with pattern watermark.
-Version: 1.7.4
+Plugin Name: JingCodeGuy Image Watermark
+Description: Image Watermark allows you to automatically watermark images uploaded to the WordPress Media Library and bulk watermark previously uploaded images. This forked version enhanced with pattern watermark. Forked and Enhanced Version from Image Watermark 1.7.4.
+Version: 1.8
 Author: dFactory/JingCodeGuy
 Author URI: http://www.jingcodeguy.com/
 Plugin URI: https://github.com/jingcodeguy/image-watermark
