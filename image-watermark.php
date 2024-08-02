@@ -1025,6 +1025,63 @@ final class Image_Watermark {
 			return 0;
 	}
 
+	public function create_pattern_texture() {
+		$options = apply_filters( 'iw_watermark_options', $this->options );
+
+		$texture = new Imagick();
+		$texture->setBackgroundColor(new ImagickPixel('none')); // Keyword: "transparent" also work
+		
+		$texture_opacity = $options['watermark_pattern_image']['transparent'];
+		$texture_base_path = get_attached_file( $options['watermark_pattern_image']['url'] );
+
+		// if need to confirm if file exists, add this: $read_texture_status = .
+		$texture->readImage(realpath($texture_base_path));
+	
+		$texture->evaluateImage(Imagick::EVALUATE_MULTIPLY, $texture_opacity / 100, Imagick::CHANNEL_ALPHA);
+
+		return $texture;
+	}
+
+	public function create_pattern_canvas($image_dim) {
+		$options = apply_filters( 'iw_watermark_options', $this->options );
+
+		$texture = $this->create_pattern_texture();
+		
+		$texture_dim = $texture->getImageGeometry();
+		$ideal_watermark_width = $options['watermark_pattern_image']['width'] / 100 * $image_dim['width'];
+
+		$scale_factor = $ideal_watermark_width / $texture_dim['width'];
+		$texture->scaleimage(intval($texture_dim['width'] * $scale_factor), intval($texture_dim['height'] * $scale_factor));
+
+		// update the new height and width after scale
+		$texture_dim = $texture->getImageGeometry();
+
+		$diagonal = ceil(sqrt(pow($image_dim['width'], 2) + pow($image_dim['height'], 2)));
+		
+		// generate the pattern
+		$canvas = new Imagick();
+		$canvas->newImage($diagonal, $diagonal, 'none');
+		$canvas->setImageFormat("png");
+		$canvas->setImageAlphaChannel(Imagick::ALPHACHANNEL_SET);
+
+		for ($x = 0; $x < $diagonal; $x += $texture_dim['width']) {
+			for ($y = 0; $y < $diagonal; $y += $texture_dim['height']) {
+				// file_put_contents('/volumes/ram/iw_log.txt', 'x '.$x."\n", FILE_APPEND);
+				// file_put_contents('/volumes/ram/iw_log.txt', 'y '.$y."\n", FILE_APPEND);
+				$canvas->compositeImage($texture, Imagick::COMPOSITE_OVER, $x, $y);
+			}
+		}
+
+		$canvas->rotateImage(new ImagickPixel('none'), $options['watermark_pattern_image']['rotation']);
+
+		// Clean up.
+		$texture->clear();
+		$texture->destroy();
+		$texture = null;
+
+		return $canvas;
+	}
+
 	/**
 	 * Apply watermark to image.
 	 *
@@ -1052,59 +1109,25 @@ final class Image_Watermark {
 			// get image dimensions
 			$image_dim = $image->getImageGeometry();
 			
-			// add texture watermark
+			// add texture watermark (support svg image as input).
 			// Create texture if pattern image is set.
 			if ( wp_attachment_is_image( $options['watermark_pattern_image']['url'] ) ) {
-				// file_put_contents('/volumes/ram/iw_log.txt', 'process pattern image'."\n", FILE_APPEND);
-				
-				$texture = new Imagick();
-				$texture->setBackgroundColor(new ImagickPixel('none')); // Keyword: "transparent" also work
-				
-				$texture_opacity = $options['watermark_pattern_image']['transparent'];
-				$texture_base_path = get_attached_file( $options['watermark_pattern_image']['url'] );
-				$read_texture_status = $texture->readImage(realpath($texture_base_path));
-
-				$texture->evaluateImage(Imagick::EVALUATE_MULTIPLY, $texture_opacity / 100, Imagick::CHANNEL_ALPHA);
-
-				$texture_dim = $texture->getImageGeometry();
-				$ideal_watermark_width = $options['watermark_pattern_image']['width'] / 100 * $image_dim['width'];
-				$scale_factor = $ideal_watermark_width / $texture_dim['width'];
-				$texture->scaleimage(intval($texture_dim['width'] * $scale_factor), intval($texture_dim['height'] * $scale_factor));
-
-				// update the new height and width after scale
-				$texture_dim = $texture->getImageGeometry();
-
-				$diagonal = ceil(sqrt(pow($image_dim['width'], 2) + pow($image_dim['height'], 2)));
-				// generate the pattern
-				$canvas = new Imagick();
-				$canvas->newImage($diagonal, $diagonal, 'none');
-				$canvas->setImageFormat("png");
-				$canvas->setImageAlphaChannel(Imagick::ALPHACHANNEL_SET);
-
-				for ($x = 0; $x < $diagonal; $x += $texture_dim['width']) {
-					for ($y = 0; $y < $diagonal; $y += $texture_dim['height']) {
-						// file_put_contents('/volumes/ram/iw_log.txt', 'x '.$x."\n", FILE_APPEND);
-						// file_put_contents('/volumes/ram/iw_log.txt', 'y '.$y."\n", FILE_APPEND);
-						$canvas->compositeImage($texture, Imagick::COMPOSITE_OVER, $x, $y);
-					}
-				}
-
-				$canvas->rotateImage(new ImagickPixel('none'), -45);
+				$canvas = $this->create_pattern_canvas($image_dim);
 				$canvas_dim = $canvas->getImageGeometry();
 
+				// Composite the watermark over the image.
 				$offsetX = ($image_dim['width'] - $canvas_dim['width']) / 2;
 				$offsetY = ($image_dim['height'] - $canvas_dim['height']) / 2;
 
-
 				$image->compositeImage($canvas, Imagick::COMPOSITE_OVER, intval($offsetX), intval($offsetY));
-				$texture->clear();
-				$texture->destroy();
-				$texture = null;
+
+				// Clean up.
 				$canvas->clear();
 				$canvas->destroy();
 				$canvas = null;
 			}
 
+			// add single watermark.
 			if ( wp_attachment_is_image( $options['watermark_image']['url'] )) {
 				// get watermark path
 				$watermark_file = wp_get_attachment_metadata( $options['watermark_image']['url'], true );
@@ -1117,8 +1140,12 @@ final class Image_Watermark {
 				if ( $watermark->getImageAlphaChannel() > 0 )
 					$watermark->evaluateImage( Imagick::EVALUATE_MULTIPLY, round( (float) ( $options['watermark_image']['transparent'] / 100 ), 2 ), Imagick::CHANNEL_ALPHA );
 				// no alpha channel
-				else
-					$watermark->setImageOpacity( round( (float) ( $options['watermark_image']['transparent'] / 100 ), 2 ) );
+				else {
+					// This function has been DEPRECATED as of Imagick 3.4.4. Relying on this function is highly discouraged.
+					if ( version_compare( phpversion( 'imagick' ), '3.4.4', '<' ) ) {
+						$watermark->setImageOpacity( round( (float) ( $options['watermark_image']['transparent'] / 100 ), 2 ) );
+					}
+				}
 		
 				// set compression quality
 				if ( $mime['type'] === 'image/jpeg' ) {
@@ -1131,15 +1158,15 @@ final class Image_Watermark {
 				if ( $options['watermark_image']['jpeg_format'] === 'progressive' )
 				$image->setImageInterlaceScheme( Imagick::INTERLACE_PLANE );
 			
-				// calculate image coordinates
-				list( $dest_x, $dest_y ) = $this->calculate_image_coordinates( $image_dim['width'], $image_dim['height'], $width, $height, $options );
-
 				// get watermark dimensions
 				$watermark_dim = $watermark->getImageGeometry();
-	
+
 				// calculate watermark new dimensions
 				list( $width, $height ) = $this->calculate_watermark_dimensions( $image_dim['width'], $image_dim['height'], $watermark_dim['width'], $watermark_dim['height'], $options );
 	
+				// calculate image coordinates
+				list( $dest_x, $dest_y ) = $this->calculate_image_coordinates( $image_dim['width'], $image_dim['height'], $width, $height, $options );
+				
 				// resize watermark
 				$watermark->resizeImage( $width, $height, imagick::FILTER_CATROM, 1 );
 
@@ -1357,8 +1384,21 @@ final class Image_Watermark {
 				$width = (int) ( $image_height * $width / $height );
 				$height = $image_height;
 			}
-		// original
+		} elseif ( $options['watermark_image']['watermark_size_type'] === 3 ) {
+			// Use the longest side to calculate the scale factor.
+			if( $watermark_width > $watermark_height ) {
+				$reference_width = $watermark_width;
+			} else {
+				$reference_width = $watermark_height;
+			}
+
+			$ideal_width = $image_width * $options['watermark_image']['width'] / 100;
+			$ratio = $ideal_width / $reference_width;
+
+			$width = (int) ( $watermark_width * $ratio );
+			$height = (int) ( $watermark_height * $ratio );
 		} else {
+			// original
 			$width = $watermark_width;
 			$height = $watermark_height;
 		}
@@ -1422,7 +1462,7 @@ final class Image_Watermark {
 				$dest_x = (int) round( ( $image_width / 2 ) - ( $watermark_width / 2 ), 0 );
 				$dest_y = (int) round( ( $image_height / 2 ) - ( $watermark_height / 2 ), 0 );
 		}
-
+		
 		if ( $options['watermark_image']['offset_unit'] === 'pixels' ) {
 			$dest_x += $options['watermark_image']['offset_width'];
 			$dest_y += $options['watermark_image']['offset_height'];
